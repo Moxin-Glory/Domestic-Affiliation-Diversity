@@ -1,12 +1,6 @@
 * Import the CSV file
 import delimited "/your path/paper_info.csv"
 
-* Convert the paper_id variable to numeric, replacing existing values if necessary
-destring paper_id, replace force
-
-* Set the dataset to be a time-series dataset with paper_id as the panel variable and year as the time variable
-xtset paper_id year
-
 * Generate a new variable lnc3 lnc10, which is the natural logarithm of (1 + c3)
 gen lnc3 = log(1 + c3)
 gen lnc10 = log(1 + c10)
@@ -35,22 +29,52 @@ local countries "US CN JP GB"
 foreach country in `countries' {	
     reg lnc3 affiliation_diversity teamsize log_ref sjr i.year i.field if country == "`country'" & year <= 2017, r
 }
-
-
 * c10
 foreach country in `countries' {
     reg lnc10 affiliation_diversity teamsize log_ref sjr i.year i.field if country == "`country'" & year <= 2010, r  
 }
-
-
 * hit paper
 foreach country in `countries' {
     logit top5 affiliation_diversity teamsize log_ref sjr i.year i.field if country == "`country'", r iterate(10)   
 }
 
-
 ###############################################################################################################
 * Figure 6 Code
+
+* overall c3
+* Loop through team sizes from 2 to 10
+forvalues t = 2/10 {
+    reg lnc3 affiliation_diversity log_ref sjr i.year i.field if teamsize == `t' & year <= 2017, r
+    est sto m`t'
+}
+* Export the regression results of lnc3 for each team size to a Word document
+reg2docx m2 m3 m4 m5 m6 m7 m8 m9 m10 ///
+    using "/your path/figure6_overall_c3.docx", append ///
+    scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("Overall c3")  
+	
+* overall c10
+* Loop through team sizes from 2 to 10
+forvalues t = 2/10 {
+    reg lnc10 affiliation_diversity log_ref sjr i.year i.field if teamsize == `t' & year <= 2010, r
+    est sto m`t'
+}
+* Export the regression results of lnc10 for each team size to a Word document
+reg2docx m2 m3 m4 m5 m6 m7 m8 m9 m10 ///
+    using "/your path/figure6_overall_c10.docx", append ///
+    scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("Overall c10")    
+
+
+* overall top5
+* Loop through team sizes from 2 to 10
+forvalues t = 2/10 {
+    reg top5 affiliation_diversity log_ref sjr i.year i.field if teamsize == `t' , r
+    est sto m`t'
+}
+* Export the regression results of top5 for each team size to a Word document
+reg2docx m2 m3 m4 m5 m6 m7 m8 m9 m10 ///
+    using "/your path/figure6_overall_top5.docx", append ///
+    scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("Overall top5")  
+
 
 * Define a local macro 'countries' containing a list of countries
 local countries "US CN JP GB "
@@ -65,7 +89,7 @@ foreach country in `countries' {
     * Export the regression results of lnc3 for each team size of the current country to a Word document
     reg2docx `country'_m2 `country'_m3 `country'_m4 `country'_m5 `country'_m6 `country'_m7 `country'_m8 `country'_m9 `country'_m10 ///
         using "/your path/figure6_c3.docx", append ///
-        indicate("ind=ind*") scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("`country' c3")
+        scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("`country' c3")
 }
 
 * c10
@@ -77,7 +101,7 @@ foreach country in `countries' {
     * Export the regression results of lnc10 for each team size of the current country to a Word document
     reg2docx `country'_m2 `country'_m3 `country'_m4 `country'_m5 `country'_m6 `country'_m7 `country'_m8 `country'_m9 `country'_m10 ///
         using "/your path/figure6_c10.docx", append ///
-        indicate("ind=ind*") scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("`country' c10")
+        scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("`country' c10")
 }
 
 * hit paper
@@ -90,7 +114,7 @@ foreach country in `countries' {
     * Export the regression results of top5 for each team size of the current country to a Word document
     reg2docx `country'_m2 `country'_m3 `country'_m4 `country'_m5 `country'_m6 `country'_m7 `country'_m8 `country'_m9 `country'_m10 ///
         using "/your path/figure6_top5.docx", append ///
-        indicate("ind=ind*") scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("`country' HIT")
+        scalars(N r2(%9.3f) r2_a(%9.3f)) b(%9.3f) se(%7.3f) title("`country' HIT")
 }
 #############################################################################################################
 * Table 3 Code
